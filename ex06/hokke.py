@@ -4,14 +4,13 @@ import sys
 import random
 from pygame import mixer #荒井担当分
 import tkinter.messagebox as tkm #荒井担当分
-
 count1,count2=0,0 #荒井担当分
 
-#林担当
+#林担当分
 def bgm():
     # 音楽ファイルの読み込み
     pg.mixer.music.load("ex06/Floor_Beast.mp3") 
-    pg.mixer.music.play(loops=-1, start=0.0)#ロードした音楽の再生
+    #pg.mixer.music.play(loops=-1, start=0.0)#ロードした音楽の再生
 
 class Screen:
     def __init__(self, title, wh):
@@ -25,9 +24,9 @@ class Screen:
        
     def blit(self):
         self.sfc.blit(self.bgi_sfc, self.bgi_rct) # スクリーンに描画
-        
-    
-class Kabe: # 右側のプレイヤーを作成する関数
+
+
+class Kabe: # 右側のプレイヤーを作成するクラス
     def __init__(self ,image,size,xy):  #scr: Screen):
         self.sfc=pg.image.load(image)#画像を取得
         self.sfc=pg.transform.rotozoom(self.sfc, 0, size)#1/4倍にズーム
@@ -36,13 +35,19 @@ class Kabe: # 右側のプレイヤーを作成する関数
         
     def blit(self, scr: Screen):
         scr.sfc.blit(self.sfc, self.rct)
-    
+
     def update(self, scr: Screen):
         key_states = pg.key.get_pressed() # 辞書
-        if key_states[pg.K_w]: # wを押すと上に移動
-            self.rct.centery -= 1
-        if key_states[pg.K_s]: # sを押すと下に移動
-            self.rct.centery += 1
+        if self.rct.centerx <= scr.rct.centerx: # 画面の左側にある場合
+            if key_states[pg.K_w]: # wを押すと上に移動
+                self.rct.centery -= 1
+            elif key_states[pg.K_s]: # sを押すと下に移動
+                self.rct.centery += 1
+        if self.rct.centerx >= scr.rct.centerx: # 画面の右側にある場合
+            if key_states[pg.K_UP]: # 上キーを押すと上に移動
+                self.rct.centery -= 1
+            elif key_states[pg.K_DOWN]: # 下キーを押すと下に移動
+                self.rct.centery += 1
         if check_bound(self.rct, scr.rct) != (1, 1): # 領域外だったら
             if key_states[pg.K_w]: 
                 self.rct.centery += 1
@@ -50,29 +55,6 @@ class Kabe: # 右側のプレイヤーを作成する関数
                 self.rct.centery -= 1
         self.blit(scr)
 
-
-class Kabe2: # 左側のプレイヤーを作成する関数
-    def __init__(self ,image,size,xy):  
-        self.sfc=pg.image.load(image)#画像を取得
-        self.sfc=pg.transform.rotozoom(self.sfc, 0, size)#1/4倍にズーム
-        self.rct=self.sfc.get_rect()
-        self.rct.center=xy #位置を設定
-        
-    def blit(self, scr: Screen):
-        scr.sfc.blit(self.sfc, self.rct)
-    
-    def update(self, scr: Screen):
-        key_states = pg.key.get_pressed() # 辞書
-        if key_states[pg.K_UP]: # 上キーを押すと上に移動
-            self.rct.centery -= 1
-        if key_states[pg.K_DOWN]: # 下キーを押すと下に移動
-            self.rct.centery += 1
-        if check_bound(self.rct, scr.rct) != (1, 1): # 領域外だったら
-            if key_states[pg.K_UP]:  
-                self.rct.centery += 1
-            if key_states[pg.K_DOWN]: 
-                self.rct.centery -= 1
-        self.blit(scr)
 
 
 class Score: # スコアを描画する関数
@@ -86,7 +68,6 @@ class Score: # スコアを描画する関数
     def blit(self, scr: Screen):
         scr.sfc.blit(self.tscore1, (750, 20))
         scr.sfc.blit(self.tscore2, (850, 20))
-
     def update(self, scr: Screen, bk):
         if bk.centerx > 800: # 左側のプレイヤーの点数を更新
             self.s1 += 1
@@ -96,18 +77,14 @@ class Score: # スコアを描画する関数
         self.tscore2 = self.fscore2.render(str(self.s2), True, (255, 255, 255))
         self.blit(scr)
 
-
 class Bird: #本田担当分 障害物として存在するこうかとん
-
     def __init__(self, image: str, size: float, xy):
         self.sfc = pg.image.load(image)    # Surface
         self.sfc = pg.transform.rotozoom(self.sfc, 0, size)  # Surface
         self.rct = self.sfc.get_rect()          # Rect
         self.rct.center = xy
-
     def blit(self, scr: Screen):
         scr.sfc.blit(self.sfc, self.rct)
-
     def update(self, scr: Screen):
         key_states = pg.key.get_pressed() # 辞書
         if key_states[pg.K_UP] or key_states[pg.K_w]: 
@@ -128,8 +105,6 @@ class Bird: #本田担当分 障害物として存在するこうかとん
             if key_states[pg.K_RIGHT]: 
                  self.rct.centerx -= 1
         self.blit(scr)
-
-
 class Ball: # ボールを描画する関数
     def __init__(self, image, vxy, scr: Screen):
         self.sfc = pg.image.load(image) # Surface
@@ -138,58 +113,43 @@ class Ball: # ボールを描画する関数
         self.rct.centerx = 800#出現位置のx座標を中心に
         self.rct.centery = 450#出現位置のy座標を中心に
         self.vx, self.vy = vxy 
-
     def blit(self, scr: Screen):
         scr.sfc.blit(self.sfc, self.rct)
-
     def update(self, scr: Screen):
         self.rct.move_ip(self.vx, self.vy)
         yoko, tate = check_bound(self.rct, scr.rct)
         self.vx *= yoko
         self.vy *= tate   
         self.blit(scr)   
-
-
 class Obstacle: #荒井担当分
     def __init__(self,image):
         self.sfc=pg.image.load(image)#画像を取得
         self.sfc=pg.transform.rotozoom(self.sfc, 0, 0.25)#1/4倍にズーム
         self.rct=self.sfc.get_rect()
         self.rct.center=random.randint(500,1100),random.randint(100,800) #位置を設定
-
     def blit(self, scr:Screen):
         scr.sfc.blit(self.sfc,self.rct)    
-
-
 class End: #荒井担当分
     def __init__(self):
         mixer.init()#初期化
         mixer.music.load("fig/poka.mp3")#音声ファイルの呼び出し
         mixer.music.play(1)#再生回数   
-
-
 class Word: #荒井担当分
     def __init__(self ,title, text):
         tkm.showwarning(title,text)#終了時のテキストを表示
-
-
-
-
 def main():
     clock = pg.time.Clock()
     scr = Screen("ホッケーゲーム", (1600, 900))
     bkd = Ball("fig/ball.png", (+3,+3), scr)
     kb = Kabe("fig/line1.png",0.75,(50,450))
-    kb2 = Kabe2("fig/line2.png",0.75,(1550,450))
-    
+    kb2 = Kabe("fig/line2.png",0.75,(1550,450))
+
     #障害物 荒井担当分
     obs=[]
     for i in range(3): #障害物を３つ生成（荒井）
         obs.append(Obstacle("fig/障害物.png"))
-
     kkt = Bird("fig/6.png", 2.0, (900, 400))
     sc = Score(0, 0)
-
     while True:
         scr.blit()
         for event in pg.event.get():
@@ -205,7 +165,6 @@ def main():
                 bkd.vy -= 0.4
             else:
                 bkd.vy += 0.4
-
         bkd.update(scr)
         kkt.update(scr)
         if bkd.rct.colliderect(kb.rct): # ボールと右側のプレイヤーが当たったらボールが反射する
@@ -230,7 +189,6 @@ def main():
         if kkt.rct.colliderect(bkd.rct):
             bkd.vx *= -1
         # 中野担当分
-
         if sc.s1 == 5 and sc.s2 < 4: # どちらかが5点取ったらゲーム終了
             pg.mixer.music.stop()
             pg.mixer.music.load("ex06/fig/レベルアップ.mp3")
@@ -249,8 +207,6 @@ def main():
                 
         pg.display.update()
         clock.tick(1000)
-
-
 def check_bound(rct, scr_rct): 
     global count1, count2
     yoko, tate = +1, +1 # 領域内
@@ -262,8 +218,6 @@ def check_bound(rct, scr_rct):
         count2+=1#得点を加算
     if rct.top  < scr_rct.top  or scr_rct.bottom < rct.bottom: tate = -1 # 領域外
     return yoko, tate
-
-
 if __name__ == "__main__":
     pg.init()
     bgm()
